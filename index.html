@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tamagotchi - Яндекс Игры</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Экран выбора персонажа -->
+        <div id="characterSelectScreen" class="screen active">
+            <h1>Выберите персонажа</h1>
+            <div class="character-grid">
+                <div class="character-card" data-character="cat">
+                    <div class="character-icon">🐱</div>
+                    <h3>Котик</h3>
+                    <p>Милый и игривый</p>
+                </div>
+                <div class="character-card" data-character="dog">
+                    <div class="character-icon">🐕</div>
+                    <h3>Щенок</h3>
+                    <p>Верный друг</p>
+                </div>
+                <div class="character-card" data-character="rabbit">
+                    <div class="character-icon">🐰</div>
+                    <h3>Кролик</h3>
+                    <p>Быстрый и ловкий</p>
+                </div>
+                <div class="character-card" data-character="duck">
+                    <div class="character-icon">🦆</div>
+                    <h3>Утёнок</h3>
+                    <p>Весёлый малыш</p>
+                </div>
+                <div class="character-card" data-character="fox">
+                    <div class="character-icon">🦊</div>
+                    <h3>Лисёнок</h3>
+                    <p>Хитрый и умный</p>
+                </div>
+                <div class="character-card" data-character="panda">
+                    <div class="character-icon">🐼</div>
+                    <h3>Панда</h3>
+                    <p>Спокойный и мудрый</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Главный экран игры -->
+        <div id="gameScreen" class="screen">
+            <div class="game-header">
+                <div class="pet-name-display">
+                    <input type="text" id="petNameInput" placeholder="Введите имя питомца" maxlength="20">
+                    <button id="setNameBtn">Установить имя</button>
+                </div>
+                <button id="backToCharacterSelect" class="back-btn">← Выбрать другого</button>
+            </div>
+
+            <div class="game-stats">
+                <div class="stat">
+                    <span class="stat-label">Голод</span>
+                    <div class="stat-bar">
+                        <div id="hungerBar" class="stat-fill" style="width: 100%"></div>
+                    </div>
+                    <span class="stat-value" id="hungerValue">100</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Счастье</span>
+                    <div class="stat-bar">
+                        <div id="happinessBar" class="stat-fill" style="width: 100%"></div>
+                    </div>
+                    <span class="stat-value" id="happinessValue">100</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Энергия</span>
+                    <div class="stat-bar">
+                        <div id="energyBar" class="stat-fill" style="width: 100%"></div>
+                    </div>
+                    <span class="stat-value" id="energyValue">100</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Чистота</span>
+                    <div class="stat-bar">
+                        <div id="cleanlinessBar" class="stat-fill" style="width: 100%"></div>
+                    </div>
+                    <span class="stat-value" id="cleanlinessValue">100</span>
+                </div>
+            </div>
+
+            <div class="pet-display">
+                <div id="petContainer" class="pet-container">
+                    <div id="petSprite" class="pet-sprite"></div>
+                </div>
+                <div id="emotionDisplay" class="emotion-display"></div>
+            </div>
+
+            <div class="outfit-display">
+                <h3>Наряд</h3>
+                <div id="currentOutfit" class="current-outfit">
+                    <span id="outfitName">Обычный</span>
+                </div>
+                <div class="outfit-grid">
+                    <button class="outfit-btn" data-outfit="normal">👕 Обычный</button>
+                    <button class="outfit-btn" data-outfit="pajamas">🛌 Пижама</button>
+                    <button class="outfit-btn" data-outfit="superhero">🦸 Супергерой</button>
+                    <button class="outfit-btn" data-outfit="santa">🎅 Санта</button>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button id="feedBtn" class="action-btn feed-btn">🍖 Кормить</button>
+                <button id="playBtn" class="action-btn play-btn">🎮 Играть</button>
+                <button id="walkBtn" class="action-btn walk-btn">🚶 Прогулка</button>
+                <button id="sleepBtn" class="action-btn sleep-btn">😴 Спать</button>
+                <button id="cleanBtn" class="action-btn clean-btn">🛁 Помыть</button>
+                <button id="medicineBtn" class="action-btn medicine-btn">💊 Лечение</button>
+            </div>
+
+            <div class="stats-display">
+                <p>Уровень: <span id="levelDisplay">1</span></p>
+                <p>Опыт: <span id="expDisplay">0</span>/100</p>
+                <p>Монеты: <span id="coinsDisplay">0</span></p>
+            </div>
+
+            <div class="log-display">
+                <h4>События:</h4>
+                <div id="logContainer" class="log-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="characters.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
