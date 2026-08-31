@@ -1,384 +1,369 @@
-// Game State
-const gameState = {
-    character: null,
-    petName: 'Питомец',
-    hunger: 100,
-    happiness: 100,
-    energy: 100,
-    cleanliness: 100,
-    health: 100,
-    level: 1,
-    experience: 0,
-    coins: 0,
-    outfit: 'normal',
-    isSleeping: false,
-    lastEmotion: null,
-    gameTime: 0
-};
-
-// Constants
-const STAT_DECREASE_RATE = {
-    hunger: 0.15,
-    happiness: 0.1,
-    energy: 0.12,
-    cleanliness: 0.08
-};
-
-const ACTION_EFFECTS = {
-    feed: { hunger: 30, cleanliness: -10, coins: -5, exp: 10 },
-    play: { happiness: 20, hunger: -15, energy: -20, exp: 15 },
-    walk: { happiness: 15, energy: -25, coins: 5, cleanliness: -15, exp: 10 },
-    sleep: { energy: 40, hunger: -10 },
-    clean: { cleanliness: 40, energy: -10, coins: -3, exp: 8 },
-    medicine: { health: 40, coins: -10, exp: 5 }
-};
-
-// DOM Elements
-const characterSelectScreen = document.getElementById('characterSelectScreen');
-const gameScreen = document.getElementById('gameScreen');
-const characterCards = document.querySelectorAll('.character-card');
-const petSprite = document.getElementById('petSprite');
-const emotionDisplay = document.getElementById('emotionDisplay');
-const logContainer = document.getElementById('logContainer');
-const petNameInput = document.getElementById('petNameInput');
-const setNameBtn = document.getElementById('setNameBtn');
-const backBtn = document.getElementById('backToCharacterSelect');
-const actionButtons = {
-    feed: document.getElementById('feedBtn'),
-    play: document.getElementById('playBtn'),
-    walk: document.getElementById('walkBtn'),
-    sleep: document.getElementById('sleepBtn'),
-    clean: document.getElementById('cleanBtn'),
-    medicine: document.getElementById('medicineBtn')
-};
-
-// Event Listeners
-characterCards.forEach(card => {
-    card.addEventListener('click', selectCharacter);
-});
-
-Object.entries(actionButtons).forEach(([action, btn]) => {
-    btn.addEventListener('click', () => performAction(action));
-});
-
-setNameBtn.addEventListener('click', setPetName);
-backBtn.addEventListener('click', backToCharacterSelect);
-
-document.querySelectorAll('.outfit-btn').forEach(btn => {
-    btn.addEventListener('click', changeOutfit);
-});
-
-petNameInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') setPetName();
-});
-
-// Character Selection
-function selectCharacter(e) {
-    const characterKey = e.currentTarget.getAttribute('data-character');
-    gameState.character = characterKey;
-    gameState.petName = CHARACTERS[characterKey].name;
-    
-    characterSelectScreen.classList.remove('active');
-    gameScreen.classList.add('active');
-    
-    petNameInput.value = gameState.petName;
-    startGameLoop();
-}
-
-function backToCharacterSelect() {
-    gameState.character = null;
-    gameState.hunger = 100;
-    gameState.happiness = 100;
-    gameState.energy = 100;
-    gameState.cleanliness = 100;
-    gameState.level = 1;
-    gameState.experience = 0;
-    gameState.coins = 0;
-    gameState.isSleeping = false;
-    
-    gameScreen.classList.remove('active');
-    characterSelectScreen.classList.add('active');
-    logContainer.innerHTML = '';
-}
-
-// Pet Name
-function setPetName() {
-    const newName = petNameInput.value.trim();
-    if (newName) {
-        gameState.petName = newName;
-        addLog(`Питомец получил имя: ${newName}! 🎉`);
+// ===== КЛАСС ПИТОМЦА =====
+class Tamagotchi {
+    constructor(name, species) {
+        this.name = name;
+        this.species = species;
+        this.age = 0;
+        this.weight = 10;
+        this.hunger = 100;
+        this.happiness = 100;
+        this.energy = 100;
+        this.health = 100;
+        this.cleanliness = 100;
+        this.alive = true;
+        this.sleeping = false;
+        this.sick = false;
+        this.createdAt = Date.now();
+        this.lastUpdate = Date.now();
     }
-}
 
-// Main Game Loop
-function startGameLoop() {
-    setInterval(() => {
-        if (gameState.character && !gameState.isSleeping) {
-            updateStats();
-            updateUI();
-            checkGameEvents();
-        } else if (gameState.isSleeping) {
-            if (gameState.energy < 100) {
-                gameState.energy = Math.min(100, gameState.energy + 2);
-            } else {
-                gameState.isSleeping = false;
-                addLog(`${gameState.petName} проснулся! ☀️`);
-                updateUI();
+    isAlive() {
+        return this.alive && this.health > 0;
+    }
+
+    getState() {
+        if (this.hunger > 80) return 'hungry';
+        if (this.happiness < 30) return 'sad';
+        if (this.sleeping) return 'sleeping';
+        if (this.sick) return 'sick';
+        if (this.happiness > 80) return 'happy';
+        return 'normal';
+    }
+
+    getEmoji() {
+        const emojis = {
+            cat: {
+                hungry: '😻',
+                sad: '😿',
+                happy: '😸',
+                sleeping: '😴',
+                sick: '🤒',
+                normal: '🐱'
+            },
+            dog: {
+                hungry: '🐶',
+                sad: '😢',
+                happy: '😄',
+                sleeping: '😴',
+                sick: '🤒',
+                normal: '🐕'
+            },
+            rabbit: {
+                hungry: '🐰',
+                sad: '😢',
+                happy: '😄',
+                sleeping: '😴',
+                sick: '🤒',
+                normal: '🐰'
             }
+        };
+        const state = this.getState();
+        return emojis[this.species]?.[state] || '🐾';
+    }
+
+    updateStats() {
+        const now = Date.now();
+        const deltaTime = (now - this.lastUpdate) / 1000; // в секундах
+        this.lastUpdate = now;
+
+        if (!this.alive) return;
+
+        // Увеличение голода
+        this.hunger = Math.max(0, this.hunger - (deltaTime * 2));
+
+        // Снижение счастья если голодный
+        if (this.hunger > 60) {
+            this.happiness = Math.max(0, this.happiness - (deltaTime * 1));
         }
-    }, 1000);
 
-    updateUI();
+        // Энергия восстанавливается во время сна
+        if (this.sleeping) {
+            this.energy = Math.min(100, this.energy + (deltaTime * 3));
+            if (this.energy >= 90) {
+                this.sleeping = false;
+            }
+        } else {
+            this.energy = Math.max(0, this.energy - (deltaTime * 0.5));
+        }
+
+        // Здоровье падает если голодный или не счастлив
+        let healthDrain = 0;
+        if (this.hunger > 80) healthDrain += 1;
+        if (this.happiness < 20) healthDrain += 1;
+        if (this.energy < 20) healthDrain += 0.5;
+
+        this.health = Math.max(0, this.health - (healthDrain * deltaTime));
+
+        // Болезнь случайна при плохом здоровье
+        if (this.health < 30 && !this.sick && Math.random() < 0.001) {
+            this.sick = true;
+        }
+
+        if (this.sick) {
+            this.health = Math.max(0, this.health - (deltaTime * 1.5));
+        }
+
+        // Вес зависит от кормления
+        this.weight = 10 + Math.floor((100 - this.hunger) / 10);
+
+        // Возраст в минутах
+        this.age = Math.floor((now - this.createdAt) / 60000);
+
+        // Смерть
+        if (this.health <= 0) {
+            this.alive = false;
+        }
+    }
+
+    feed() {
+        if (!this.alive) return false;
+        this.hunger = Math.max(0, this.hunger - 30);
+        this.happiness = Math.min(100, this.happiness + 5);
+        this.weight = Math.min(20, this.weight + 1);
+        return true;
+    }
+
+    play() {
+        if (!this.alive) return false;
+        if (this.energy < 20) {
+            return 'tired';
+        }
+        if (this.hunger > 80) {
+            return 'hungry';
+        }
+        this.happiness = Math.min(100, this.happiness + 15);
+        this.energy = Math.max(0, this.energy - 15);
+        this.hunger = Math.min(100, this.hunger + 10);
+        return true;
+    }
+
+    sleep() {
+        if (!this.alive) return false;
+        this.sleeping = true;
+        return true;
+    }
+
+    heal() {
+        if (!this.alive) return false;
+        this.sick = false;
+        this.health = Math.min(100, this.health + 40);
+        return true;
+    }
+
+    clean() {
+        if (!this.alive) return false;
+        this.cleanliness = 100;
+        this.happiness = Math.min(100, this.happiness + 3);
+        return true;
+    }
 }
 
-// Update Stats Over Time
-function updateStats() {
-    if (!gameState.isSleeping) {
-        gameState.hunger = Math.max(0, gameState.hunger - STAT_DECREASE_RATE.hunger);
-        gameState.happiness = Math.max(0, gameState.happiness - STAT_DECREASE_RATE.happiness);
-        gameState.energy = Math.max(0, gameState.energy - STAT_DECREASE_RATE.energy);
-        gameState.cleanliness = Math.max(0, gameState.cleanliness - STAT_DECREASE_RATE.cleanliness);
-    }
+// ===== ИГРОВОЙ ДВИЖОК =====
+let game = null;
+let gameLoopInterval = null;
+let updateInterval = null;
+let selectedCharacter = 'cat';
 
-    // Health decreases if hunger or cleanliness is too low
-    if (gameState.hunger < 20 || gameState.cleanliness < 20) {
-        gameState.health = Math.max(0, gameState.health - 0.5);
-    } else if (gameState.health < 100) {
-        gameState.health = Math.min(100, gameState.health + 0.2);
-    }
-}
+// Инициализация
+document.addEventListener('DOMContentLoaded', () => {
+    setupEventListeners();
+    showScreen('startScreen');
+    updateTime();
+    setInterval(updateTime, 1000);
+});
 
-// Perform Actions
-function performAction(action) {
-    if (gameState.isSleeping && action !== 'sleep') {
-        addLog(`${gameState.petName} спит... 😴`);
-        return;
-    }
+function setupEventListeners() {
+    // Выбор персонажа
+    document.querySelectorAll('.char-card').forEach(card => {
+        card.addEventListener('click', () => {
+            document.querySelectorAll('.char-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            selectedCharacter = card.dataset.char;
+        });
+    });
 
-    const effects = ACTION_EFFECTS[action];
-    let canPerform = true;
-    let reason = '';
+    // Начало игры
+    document.getElementById('startGameBtn').addEventListener('click', startGame);
 
-    // Check requirements
-    if (action === 'feed' && gameState.hunger > 90) {
-        reason = 'Питомец не голоден';
-        canPerform = false;
-    } else if (action === 'play' && gameState.energy < 30) {
-        reason = 'Питомец слишком устал';
-        canPerform = false;
-    } else if (action === 'walk' && gameState.energy < 40) {
-        reason = 'Питомец нуждается в отдыхе';
-        canPerform = false;
-    } else if (action === 'clean' && gameState.cleanliness > 80) {
-        reason = 'Питомец уже чистый';
-        canPerform = false;
-    } else if (action === 'medicine' && gameState.health > 80) {
-        reason = 'Питомец здоров';
-        canPerform = false;
-    } else if ((action === 'feed' || action === 'clean' || action === 'medicine') && gameState.coins + (effects.coins || 0) < 0) {
-        reason = 'Недостаточно монет';
-        canPerform = false;
-    }
-
-    if (!canPerform) {
-        addLog(`❌ ${reason}`);
-        return;
-    }
-
-    // Apply effects
-    Object.entries(effects).forEach(([stat, value]) => {
-        if (stat in gameState) {
-            gameState[stat] = Math.max(0, Math.min(100, gameState[stat] + value));
+    // Кнопки управления
+    document.getElementById('feedBtn').addEventListener('click', () => {
+        if (game.feed()) {
+            showMessage('😋 Nomnom!');
+        } else {
+            showMessage('❌ Dead');
         }
     });
 
-    // Add experience and check for level up
-    if (effects.exp) {
-        gameState.experience += effects.exp;
-        if (gameState.experience >= 100) {
-            gameState.level++;
-            gameState.experience -= 100;
-            gameState.coins += 50;
-            addLog(`🎉 ${gameState.petName} повысился на уровень ${gameState.level}!`);
+    document.getElementById('playBtn').addEventListener('click', () => {
+        const result = game.play();
+        if (result === 'tired') {
+            showMessage('😴 Too tired');
+        } else if (result === 'hungry') {
+            showMessage('😵 Starving!');
+        } else if (result) {
+            showMessage('😄 Fun!');
         }
-    }
-
-    // Show emotion and log
-    showEmotion(action);
-    showActionMessage(action);
-    updateUI();
-}
-
-// Show Emotion
-function showEmotion(action) {
-    const emotions = {
-        feed: '😋',
-        play: '😄',
-        walk: '🌟',
-        sleep: '😴',
-        clean: '✨',
-        medicine: '💚'
-    };
-    
-    emotionDisplay.textContent = emotions[action] || '😊';
-    
-    setTimeout(() => {
-        emotionDisplay.textContent = '';
-    }, 2000);
-}
-
-// Action Messages
-function showActionMessage(action) {
-    const messages = {
-        feed: `${gameState.petName} с удовольствием поел! 🍖`,
-        play: `${gameState.petName} весело играет! 🎮`,
-        walk: `${gameState.petName} вернулся с прогулки 🚶`,
-        sleep: `${gameState.petName} заснул 😴`,
-        clean: `${gameState.petName} чистый и свежий! ✨`,
-        medicine: `${gameState.petName} чувствует себя лучше! 💊`
-    };
-    
-    addLog(messages[action]);
-}
-
-// Change Outfit
-function changeOutfit(e) {
-    const outfit = e.target.getAttribute('data-outfit');
-    gameState.outfit = outfit;
-    
-    document.querySelectorAll('.outfit-btn').forEach(btn => {
-        btn.classList.remove('active');
     });
-    e.target.classList.add('active');
+
+    document.getElementById('sleepBtn').addEventListener('click', () => {
+        if (game.sleeping) {
+            game.sleeping = false;
+            showMessage('👀 Awake!');
+        } else {
+            game.sleep();
+            showMessage('💤 Zzz...');
+        }
+    });
+
+    document.getElementById('healBtn').addEventListener('click', () => {
+        if (game.sick) {
+            game.heal();
+            showMessage('💊 Better!');
+        } else if (game.health < 100) {
+            game.health = Math.min(100, game.health + 20);
+            showMessage('⚕️ Healthy');
+        } else {
+            showMessage('Already healthy');
+        }
+    });
+
+    document.getElementById('cleanBtn').addEventListener('click', () => {
+        game.clean();
+        showMessage('🚿 Clean!');
+    });
+
+    document.getElementById('infoBtn').addEventListener('click', () => {
+        const stats = `
+            NAME: ${game.name}
+            AGE: ${game.age}m
+            WEIGHT: ${game.weight}
+            HEALTH: ${Math.floor(game.health)}%
+        `;
+        showMessage('Stats shown');
+    });
+
+    // Перезапуск после смерти
+    document.getElementById('restartBtn').addEventListener('click', () => {
+        showScreen('startScreen');
+        document.getElementById('petNameInput').value = '';
+        document.querySelectorAll('.char-card').forEach(c => c.classList.remove('selected'));
+    });
+}
+
+function startGame() {
+    const petName = document.getElementById('petNameInput').value.trim() || 'TAMA';
     
-    document.getElementById('outfitName').textContent = OUTFIT_NAMES[outfit];
-    addLog(`${gameState.petName} надел новый наряд! 👕`);
-    updateUI();
+    if (!petName) {
+        showMessage('❌ Enter name');
+        return;
+    }
+
+    game = new Tamagotchi(petName, selectedCharacter);
+    showScreen('mainScreen');
+    
+    // Главный игровой цикл
+    if (gameLoopInterval) clearInterval(gameLoopInterval);
+    gameLoopInterval = setInterval(() => {
+        if (game && game.alive) {
+            game.updateStats();
+            updateDisplay();
+            checkGameState();
+        }
+    }, 500);
 }
 
-// Check Game Events
-function checkGameEvents() {
-    if (gameState.hunger < 20 && Math.random() < 0.05) {
-        addLog(`${gameState.petName} очень голоден! 😿`);
+function updateDisplay() {
+    if (!game) return;
+
+    // Имя питомца
+    document.getElementById('petName').textContent = game.name;
+    document.getElementById('petAge').textContent = game.age;
+    document.getElementById('petWeight').textContent = game.weight;
+
+    // Статус бары
+    document.getElementById('hungerBar').style.width = Math.max(0, 100 - game.hunger) + '%';
+    document.getElementById('happyBar').style.width = game.happiness + '%';
+    document.getElementById('energyBar').style.width = game.energy + '%';
+
+    // Эмодзи питомца
+    const petElement = document.getElementById('petAnimation');
+    petElement.innerHTML = `<div class="pet-sprite">${game.getEmoji()}</div>`;
+    
+    // Классы для анимаций
+    petElement.classList.remove('hungry', 'sad', 'sleeping', 'sick');
+    if (game.sleeping) petElement.classList.add('sleeping');
+    if (game.sick) petElement.classList.add('sick');
+    if (game.hunger > 80) petElement.classList.add('hungry');
+    if (game.happiness < 30) petElement.classList.add('sad');
+
+    // Сообщение статуса
+    const messages = [];
+    
+    if (game.hunger > 80) {
+        messages.push('HUNGRY!');
+    }
+    if (game.happiness < 30) {
+        messages.push('SAD');
+    }
+    if (game.energy < 20) {
+        messages.push('TIRED');
+    }
+    if (game.sick) {
+        messages.push('SICK!!!');
+    }
+    if (game.sleeping) {
+        messages.push('SLEEPING');
     }
     
-    if (gameState.happiness < 30 && Math.random() < 0.03) {
-        addLog(`${gameState.petName} грустит... 😢`);
-    }
-    
-    if (gameState.energy < 20 && Math.random() < 0.04) {
-        addLog(`${gameState.petName} хочет спать... 😴`);
-    }
-    
-    if (gameState.cleanliness < 20 && Math.random() < 0.05) {
-        addLog(`${gameState.petName} нуждается в ванне 🛁`);
-    }
-    
-    if (gameState.health < 30 && Math.random() < 0.03) {
-        addLog(`${gameState.petName} болен! 🤒`);
-    }
+    document.getElementById('statusMessage').textContent = messages.join(' / ') || 'Healthy';
 }
 
-// Update UI
-function updateUI() {
-    if (!gameState.character) return;
-
-    // Update pet sprite
-    const character = CHARACTERS[gameState.character];
-    petSprite.textContent = character.outfits[gameState.outfit];
-    petSprite.classList.add('pulse');
-    setTimeout(() => petSprite.classList.remove('pulse'), 500);
-
-    // Update stat bars
-    updateStatBar('hunger', gameState.hunger);
-    updateStatBar('happiness', gameState.happiness);
-    updateStatBar('energy', gameState.energy);
-    updateStatBar('cleanliness', gameState.cleanliness);
-
-    // Update level and coins
-    document.getElementById('levelDisplay').textContent = gameState.level;
-    document.getElementById('expDisplay').textContent = Math.floor(gameState.experience);
-    document.getElementById('coinsDisplay').textContent = gameState.coins;
-
-    // Update button states
-    updateButtonStates();
-
-    // Show emotion based on stats
-    updateCurrentEmotion();
-}
-
-function updateStatBar(stat, value) {
-    const bar = document.getElementById(stat + 'Bar');
-    const valueDisplay = document.getElementById(stat + 'Value');
-    bar.style.width = value + '%';
-    valueDisplay.textContent = Math.floor(value);
-    
-    // Change color based on value
-    if (value > 60) {
-        bar.style.background = 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)';
-    } else if (value > 30) {
-        bar.style.background = 'linear-gradient(90deg, #f0ad4e 0%, #ec971f 100%)';
-    } else {
-        bar.style.background = 'linear-gradient(90deg, #d9534f 0%, #c9302c 100%)';
+function checkGameState() {
+    if (!game.alive) {
+        const deathReason = game.health <= 0 
+            ? (game.hunger > 80 ? 'Starved to death' : 'Died of illness')
+            : 'Unknown cause';
+        
+        document.getElementById('deathName').textContent = game.name;
+        document.getElementById('deathAge').textContent = `${game.age}m`;
+        document.getElementById('deathMessage').textContent = deathReason;
+        
+        showScreen('deathScreen');
+        if (gameLoopInterval) clearInterval(gameLoopInterval);
     }
 }
 
-function updateButtonStates() {
-    // Disable buttons based on conditions
-    actionButtons.feed.disabled = gameState.hunger > 90 || gameState.coins < 5;
-    actionButtons.play.disabled = gameState.energy < 30;
-    actionButtons.walk.disabled = gameState.energy < 40;
-    actionButtons.clean.disabled = gameState.cleanliness > 80 || gameState.coins < 3;
-    actionButtons.medicine.disabled = gameState.health > 80 || gameState.coins < 10;
-    actionButtons.sleep.disabled = gameState.isSleeping;
+function showMessage(msg) {
+    const msgEl = document.getElementById('statusMessage');
+    msgEl.textContent = msg;
 }
 
-function updateCurrentEmotion() {
-    const character = CHARACTERS[gameState.character];
-    let emotion = 'happy';
+function showScreen(screenId) {
+    document.querySelectorAll('.screen').forEach(screen => {
+        screen.classList.remove('active');
+    });
+    document.getElementById(screenId).classList.add('active');
+}
 
-    if (gameState.isSleeping) {
-        emotion = 'tired';
-    } else if (gameState.health < 30) {
-        emotion = 'sick';
-    } else if (gameState.hunger < 30) {
-        emotion = 'hungry';
-    } else if (gameState.happiness < 30) {
-        emotion = 'sad';
-    } else if (gameState.cleanliness < 30) {
-        emotion = 'dirty';
+function updateTime() {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    document.getElementById('timeDisplay').textContent = `${hours}:${minutes}`;
+}
+
+// Сохранение при закрытии
+window.addEventListener('beforeunload', () => {
+    if (game) {
+        localStorage.setItem('tamagotchi_save', JSON.stringify({
+            name: game.name,
+            species: game.species,
+            age: game.age,
+            hunger: game.hunger,
+            happiness: game.happiness,
+            energy: game.energy,
+            health: game.health,
+            sick: game.sick
+        }));
     }
-
-    gameState.lastEmotion = emotion;
-}
-
-// Logging
-function addLog(message) {
-    const logEntry = document.createElement('div');
-    logEntry.className = 'log-entry';
-    logEntry.textContent = message;
-    logContainer.insertBefore(logEntry, logContainer.firstChild);
-    
-    // Keep only last 10 entries
-    while (logContainer.children.length > 10) {
-        logContainer.removeChild(logContainer.lastChild);
-    }
-}
-
-// Save/Load Game
-function saveGame() {
-    localStorage.setItem('tamagotchiGameState', JSON.stringify(gameState));
-}
-
-function loadGame() {
-    const saved = localStorage.getItem('tamagotchiGameState');
-    if (saved) {
-        Object.assign(gameState, JSON.parse(saved));
-    }
-}
-
-// Auto save
-setInterval(saveGame, 5000);
-
-// Load game on start
-window.addEventListener('load', loadGame);
+});
